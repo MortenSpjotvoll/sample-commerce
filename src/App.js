@@ -1,14 +1,16 @@
 import React from 'react';
 import './App.css';
-
+import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage/HomePage';
+import ShopPage from './pages/shoppage/ShopPage';
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-    <HomePage/>
+    <div>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/shop/" element={<ShopPage />} />
+      </Routes>
     </div>
   );
 }
-
-export default App;
