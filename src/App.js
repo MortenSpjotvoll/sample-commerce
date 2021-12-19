@@ -1,25 +1,38 @@
-import { Component } from 'react';
-import './App.css';
-import { Routes, Route } from 'react-router-dom';
-import HomePage from './pages/homepage/HomePage';
-import ShopPage from './pages/shoppage/ShopPage';
-import SignInUpPage from './pages/signinuppage/SignInUpPage';
-import Header from './components/header/Header.jsx';
-import { auth } from './firebase/firebase.utils';
+import { Component } from "react";
+import "./App.css";
+import { Routes, Route } from "react-router-dom";
+import HomePage from "./pages/homepage/HomePage";
+import ShopPage from "./pages/shoppage/ShopPage";
+import SignInUpPage from "./pages/signinuppage/SignInUpPage";
+import Header from "./components/header/Header.jsx";
+import { auth, createUserProfileDocument } from "./firebase/firebase.utils";
+import { onSnapshot } from "firebase/firestore";
 
 class App extends Component {
   constructor() {
     super();
 
     this.state = {
-      currentUser: null
-    }
+      currentUser: null,
+    };
   }
   unsubscribeFromAuth = null;
 
   componentDidMount() {
-    this.unsubscribeFromAuth = auth.onAuthStateChanged(user => {
-      this.setState({ currentUser: user })
+    this.unsubscribeFromAuth = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userRef = await createUserProfileDocument(user);
+        onSnapshot(userRef, (snapShot) => {
+          this.setState({
+            currentUser: {
+              id: snapShot.id,
+              ...snapShot.data(),
+            },
+          });
+        });
+      }
+
+      this.setState({currentUser: user})
     });
   }
 
@@ -40,6 +53,5 @@ class App extends Component {
     );
   }
 }
-
 
 export default App;
