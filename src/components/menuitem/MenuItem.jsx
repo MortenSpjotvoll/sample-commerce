@@ -19,7 +19,7 @@ console.log(location);
         backgroundImage: `url(${imageUrl})`
       }}
     />
-    <div className='content'>
+    <div className='content noselect'>
       <h1 className='title'>{title.toUpperCase()}</h1>
       <span className='subtitle'>SHOP NOW</span>
     </div>
