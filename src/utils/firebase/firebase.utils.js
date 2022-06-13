@@ -1,47 +1,117 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, getDoc, doc, setDoc } from "firebase/firestore";
+import { initializeApp } from 'firebase/app';
+import {
+  getAuth,
+  signInWithRedirect,
+  signInWithPopup,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  writeBatch,
+  query,
+  getDocs,
+} from 'firebase/firestore';
 
-const app = initializeApp({
+const firebaseConfig = {
   apiKey: "AIzaSyBUX_iyKYdmMtiyFxnKwDy5D1Xj5x12WG8",
   authDomain: "sample-commerce-app.firebaseapp.com",
   projectId: "sample-commerce-app",
   storageBucket: "sample-commerce-app.appspot.com",
   messagingSenderId: "224086397643",
   appId: "1:224086397643:web:b9ad6e86c76b7bcf48c14e",
-  measurementId: "G-0CHC7JWGPH",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+
+const googleProvider = new GoogleAuthProvider();
+
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
 });
-export const db = getFirestore();
+
 export const auth = getAuth();
+export const signInWithGooglePopup = () =>
+  signInWithPopup(auth, googleProvider);
+export const signInWithGoogleRedirect = () =>
+  signInWithRedirect(auth, googleProvider);
 
-export const createUserProfileDocument = async (userAuth, additionalData) => {
+export const db = getFirestore();
+
+export const addCollectionAndDocuments = async (
+  collectionKey,
+  objectsToAdd,
+  field
+) => {
+  const collectionRef = collection(db, collectionKey);
+  const batch = writeBatch(db);
+
+  objectsToAdd.forEach((object) => {
+    const docRef = doc(collectionRef, object.title.toLowerCase());
+    batch.set(docRef, object);
+  });
+
+  await batch.commit();
+  console.log('done');
+};
+
+export const getCategoriesAndDocuments = async () => {
+  const collectionRef = collection(db, 'categories');
+  const q = query(collectionRef);
+
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((docSnapshot) => docSnapshot.data());
+};
+
+export const createUserDocumentFromAuth = async (
+  userAuth,
+  additionalInformation = {}
+) => {
   if (!userAuth) return;
-  const userRef = doc(db, "users", userAuth.uid);
-  const docSnap = await getDoc(userRef);
 
-  if (!docSnap.exists()) {
+  const userDocRef = doc(db, 'users', userAuth.uid);
+
+  const userSnapshot = await getDoc(userDocRef);
+
+  if (!userSnapshot.exists()) {
     const { displayName, email } = userAuth;
     const createdAt = new Date();
 
     try {
-      await setDoc(userRef, {
+      await setDoc(userDocRef, {
         displayName,
         email,
         createdAt,
-        ...additionalData,
+        ...additionalInformation,
       });
     } catch (error) {
-      console.log("Error creating user: ", error.message);
+      console.log('error creating the user', error.message);
     }
-  } else {
-    console.log(userAuth);
   }
 
-  return userRef;
+  return userDocRef;
 };
 
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: "select_account" });
-export const signInWithGoogle = () => signInWithPopup(auth, provider);
+export const createAuthUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
 
-export default app;
+  return await createUserWithEmailAndPassword(auth, email, password);
+};
+
+export const signInAuthUserWithEmailAndPassword = async (email, password) => {
+  if (!email || !password) return;
+
+  return await signInWithEmailAndPassword(auth, email, password);
+};
+
+export const signOutUser = async () => await signOut(auth);
+
+export const onAuthStateChangedListener = (callback) =>
+  onAuthStateChanged(auth, callback);
